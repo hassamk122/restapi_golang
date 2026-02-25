@@ -63,3 +63,11 @@ func (s *UserService) Login(ctx context.Context, email, password string) (string
 	jwtKey := []byte(os.Getenv("JWT_SECRET_KEY"))
 	return auth.GenerateJWT(int(user.ID), user.Email, jwtKey)
 }
+
+func (s *UserService) GetUserProfile(ctx context.Context, userId int32) (*store.GetUserRow, error) {
+	user, err := s.UserRepo.GetUserByID(ctx, userId)
+	if err != nil {
+		return nil, ErrUserNotFound
+	}
+	return &user, nil
+}

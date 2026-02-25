@@ -5,11 +5,32 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/hassamk122/restapi_golang/internal/auth"
 	"github.com/hassamk122/restapi_golang/internal/dtos"
+	"github.com/hassamk122/restapi_golang/internal/middlewares"
 	"github.com/hassamk122/restapi_golang/internal/service"
 	"github.com/hassamk122/restapi_golang/internal/utils"
 	"github.com/hassamk122/restapi_golang/internal/validation"
 )
+
+func (h *Handler) UserProfile() http.HandlerFunc {
+	return func(res http.ResponseWriter, req *http.Request) {
+		claims, ok := req.Context().Value(middlewares.UserClaimsKey).(*auth.Claims)
+		if !ok {
+			utils.RespondWithError(res, http.StatusBadRequest, "please login to continue")
+			return
+		}
+
+		userID := claims.UserId
+
+		user, err := h.UserService.GetUserProfile(req.Context(), int32(userID))
+		if err != nil {
+			utils.RespondWithError(res, http.StatusNotFound, err.Error())
+		}
+
+		utils.RespondWithSuccess(res, http.StatusOK, "success", user)
+	}
+}
 
 func (h *Handler) LoginUserHandler() http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
@@ -20,7 +41,7 @@ func (h *Handler) LoginUserHandler() http.HandlerFunc {
 		decoder := json.NewDecoder(req.Body)
 		decoder.DisallowUnknownFields()
 		if err := decoder.Decode(&userReq); err != nil {
-			utils.RespondWithError(res, http.StatusBadGateway, "Invalid request payload")
+			utils.RespondWithError(res, http.StatusBadGateway, service.ErrInvalidRequestPayload.Error())
 			return
 		}
 
@@ -47,7 +68,7 @@ func (h *Handler) CreateUserHandler() http.HandlerFunc {
 
 		var userReq dtos.CreateUserRequest
 		if err := json.NewDecoder(req.Body).Decode(&userReq); err != nil {
-			utils.RespondWithError(res, http.StatusBadGateway, "Invalid request payload")
+			utils.RespondWithError(res, http.StatusBadGateway, service.ErrInvalidRequestPayload.Error())
 			return
 		}
 

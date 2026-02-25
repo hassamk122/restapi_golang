@@ -4,13 +4,24 @@ import (
 	"net/http"
 
 	"github.com/hassamk122/restapi_golang/internal/handlers"
+	"github.com/hassamk122/restapi_golang/internal/middlewares"
 )
 
 func SetupUserRoutes(mux *http.ServeMux, handler *handlers.Handler) {
 	userMux := http.NewServeMux()
 
-	mux.Handle("/user/", http.StripPrefix("/user", userMux))
+	mux.Handle("/users/", http.StripPrefix("/users", userMux))
 
-	userMux.HandleFunc("POST /register", handler.CreateUserHandler())
-	userMux.HandleFunc("POST /login", handler.LoginUserHandler())
+	userMux.Handle("POST /register", middlewares.Apply(
+		handler.CreateUserHandler(),
+		middlewares.LoggingMiddleware))
+
+	userMux.Handle("POST /login", middlewares.Apply(
+		handler.LoginUserHandler(),
+		middlewares.LoggingMiddleware))
+
+	userMux.Handle("GET /user/profile", middlewares.Apply(
+		handler.UserProfile(),
+		middlewares.LoggingMiddleware,
+		middlewares.AuthMiddleware))
 }
