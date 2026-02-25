@@ -10,6 +10,7 @@ import (
 	"github.com/hassamk122/restapi_golang/config/dbconfig"
 	"github.com/hassamk122/restapi_golang/internal/handlers"
 	"github.com/hassamk122/restapi_golang/internal/routes"
+	"github.com/hassamk122/restapi_golang/internal/store"
 )
 
 func main() {
@@ -22,7 +23,8 @@ func main() {
 	db := dbconfig.ConnectDB(config.DatabaseUrl)
 	defer db.Close()
 
-	handler := handlers.NewHandler()
+	queries := store.New(db)
+	handler := handlers.NewHandler(db, queries)
 
 	mux := http.NewServeMux()
 	routes.SetupRoutes(mux, handler)

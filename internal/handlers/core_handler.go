@@ -11,6 +11,9 @@ type Handler struct {
 	Queries *store.Queries
 }
 
-func NewHandler() *Handler {
-	return &Handler{}
+func NewHandler(db *sql.DB, queries *store.Queries) *Handler {
+	return &Handler{
+		DB:      db,
+		Queries: queries,
+	}
 }

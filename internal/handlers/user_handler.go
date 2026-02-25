@@ -35,6 +35,6 @@ func (h *Handler) CreateUserHandler() http.HandlerFunc {
 			return
 		}
 
-		utils.RespondWithSuccess(res, http.StatusCreated, "User created ", userReq.Username)
+		utils.RespondWithSuccess(res, http.StatusCreated, "User created successfully", userReq.Username)
 	}
 }

@@ -11,27 +11,19 @@ import (
 )
 
 const createBlog = `-- name: CreateBlog :one
-INSERT INTO blogs(title, content, user_id, created_at, updated_at)
-VALUES ($1, $2, $3, $4, $5)
+INSERT INTO blogs(title, content, user_id)
+VALUES ($1, $2, $3)
     RETURNING id, title, content, user_id, created_at, updated_at
 `
 
 type CreateBlogParams struct {
-	Title     string       `json:"title"`
-	Content   string       `json:"content"`
-	UserID    int32        `json:"user_id"`
-	CreatedAt sql.NullTime `json:"created_at"`
-	UpdatedAt sql.NullTime `json:"updated_at"`
+	Title   string `json:"title"`
+	Content string `json:"content"`
+	UserID  int32  `json:"user_id"`
 }
 
 func (q *Queries) CreateBlog(ctx context.Context, arg CreateBlogParams) (Blog, error) {
-	row := q.queryRow(ctx, q.createBlogStmt, createBlog,
-		arg.Title,
-		arg.Content,
-		arg.UserID,
-		arg.CreatedAt,
-		arg.UpdatedAt,
-	)
+	row := q.queryRow(ctx, q.createBlogStmt, createBlog, arg.Title, arg.Content, arg.UserID)
 	var i Blog
 	err := row.Scan(
 		&i.ID,
@@ -45,17 +37,15 @@ func (q *Queries) CreateBlog(ctx context.Context, arg CreateBlogParams) (Blog, e
 }
 
 const createUser = `-- name: CreateUser :one
-INSERT INTO users(username, email, password, created_at, updated_at)
-VALUES ($1, $2, $3, $4, $5)
+INSERT INTO users(username, email, password)
+VALUES ($1, $2, $3)
     RETURNING id, username, email, created_at, updated_at
 `
 
 type CreateUserParams struct {
-	Username  string       `json:"username"`
-	Email     string       `json:"email"`
-	Password  string       `json:"password"`
-	CreatedAt sql.NullTime `json:"created_at"`
-	UpdatedAt sql.NullTime `json:"updated_at"`
+	Username string `json:"username"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
 }
 
 type CreateUserRow struct {
@@ -67,13 +57,7 @@ type CreateUserRow struct {
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (CreateUserRow, error) {
-	row := q.queryRow(ctx, q.createUserStmt, createUser,
-		arg.Username,
-		arg.Email,
-		arg.Password,
-		arg.CreatedAt,
-		arg.UpdatedAt,
-	)
+	row := q.queryRow(ctx, q.createUserStmt, createUser, arg.Username, arg.Email, arg.Password)
 	var i CreateUserRow
 	err := row.Scan(
 		&i.ID,
