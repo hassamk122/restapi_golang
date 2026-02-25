@@ -2,12 +2,10 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
-	"os"
 
-	"github.com/hassamk122/restapi_golang/internal/auth"
 	"github.com/hassamk122/restapi_golang/internal/dtos"
-	"github.com/hassamk122/restapi_golang/internal/store"
 	"github.com/hassamk122/restapi_golang/internal/utils"
 	"github.com/hassamk122/restapi_golang/internal/validation"
 )
@@ -30,19 +28,7 @@ func (h *Handler) LoginUserHandler() http.HandlerFunc {
 			return
 		}
 
-		user, err := h.Queries.GetUserByEmailIncludingPassword(ctx, userReq.Email)
-		if err != nil {
-			utils.RespondWithError(res, http.StatusUnauthorized, "Invalid credentials")
-			return
-		}
-
-		if !utils.ComparePassword(user.Password, userReq.Password) {
-			utils.RespondWithError(res, http.StatusUnauthorized, "Invalid credentials")
-			return
-		}
-
-		jwtKey := []byte(os.Getenv("JWT_SECRET_KEY"))
-		token, err := auth.GenerateJWT(int(user.ID), user.Email, jwtKey)
+		token, err := h.UserService.Login(ctx, userReq.Email, userReq.Password)
 		if err != nil {
 			utils.RespondWithError(res, http.StatusInternalServerError, "Error generating a token")
 			return
@@ -69,41 +55,17 @@ func (h *Handler) CreateUserHandler() http.HandlerFunc {
 			return
 		}
 
-		tx, err := h.DB.BeginTx(ctx, nil)
-		if err != nil {
-			utils.RespondWithError(res, http.StatusBadRequest, "Error starting transaction")
-			return
-		}
-		defer tx.Rollback()
-
-		qtx := store.New(tx)
-
-		_, err = qtx.GetUserByEmail(ctx, userReq.Email)
-		if err == nil {
+		err := h.UserService.Register(ctx, userReq.Username, userReq.Email, userReq.Password)
+		if errors.Is(err, utils.ErrEmailTaken) {
 			utils.RespondWithError(res, http.StatusConflict, "Email already taken")
 			return
 		}
 
-		hashedPassword, err := utils.HashPassword(userReq.Password)
-		if err != nil {
-			utils.RespondWithError(res, http.StatusInternalServerError, "Error while hashing password")
-			return
-		}
-
-		_, err = qtx.CreateUser(ctx, store.CreateUserParams{
-			Username: userReq.Username,
-			Email:    userReq.Email,
-			Password: hashedPassword,
-		})
 		if err != nil {
 			utils.RespondWithError(res, http.StatusInternalServerError, "Error creating user")
 			return
 		}
 
-		if err := tx.Commit(); err != nil {
-			utils.RespondWithError(res, http.StatusInternalServerError, "Failed to commit transaction")
-		}
-
-		utils.RespondWithSuccess(res, http.StatusCreated, "User created successfully", userReq.Username)
+		utils.RespondWithSuccess(res, http.StatusCreated, "User created successfully", nil)
 	}
 }

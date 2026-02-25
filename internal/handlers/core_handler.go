@@ -1,19 +1,18 @@
 package handlers
 
 import (
-	"database/sql"
-
-	"github.com/hassamk122/restapi_golang/internal/store"
+	"github.com/hassamk122/restapi_golang/internal/repo"
+	"github.com/hassamk122/restapi_golang/internal/service"
 )
 
 type Handler struct {
-	DB      *sql.DB
-	Queries *store.Queries
+	UserRepo    repo.UserRepo
+	UserService *service.UserService
 }
 
-func NewHandler(db *sql.DB, queries *store.Queries) *Handler {
+func NewHandler(userRepo repo.UserRepo, userService *service.UserService) *Handler {
 	return &Handler{
-		DB:      db,
-		Queries: queries,
+		UserRepo:    userRepo,
+		UserService: userService,
 	}
 }
