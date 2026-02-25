@@ -16,3 +16,7 @@ func RespondWithError(res http.ResponseWriter, statusCode int, message string) {
 		Message: message,
 	})
 }
+
+func ResondWithNotFound(res http.ResponseWriter) {
+	RespondWithError(res, http.StatusNotFound, "Resource not found")
+}

@@ -33,6 +33,9 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	if q.getUserStmt, err = db.PrepareContext(ctx, getUser); err != nil {
 		return nil, fmt.Errorf("error preparing query GetUser: %w", err)
 	}
+	if q.getUserByEmailStmt, err = db.PrepareContext(ctx, getUserByEmail); err != nil {
+		return nil, fmt.Errorf("error preparing query GetUserByEmail: %w", err)
+	}
 	if q.listBlogsStmt, err = db.PrepareContext(ctx, listBlogs); err != nil {
 		return nil, fmt.Errorf("error preparing query ListBlogs: %w", err)
 	}
@@ -57,6 +60,11 @@ func (q *Queries) Close() error {
 	if q.getUserStmt != nil {
 		if cerr := q.getUserStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing getUserStmt: %w", cerr)
+		}
+	}
+	if q.getUserByEmailStmt != nil {
+		if cerr := q.getUserByEmailStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing getUserByEmailStmt: %w", cerr)
 		}
 	}
 	if q.listBlogsStmt != nil {
@@ -106,23 +114,25 @@ func (q *Queries) queryRow(ctx context.Context, stmt *sql.Stmt, query string, ar
 }
 
 type Queries struct {
-	db             DBTX
-	tx             *sql.Tx
-	createBlogStmt *sql.Stmt
-	createUserStmt *sql.Stmt
-	getUserStmt    *sql.Stmt
-	listBlogsStmt  *sql.Stmt
-	listUsersStmt  *sql.Stmt
+	db                 DBTX
+	tx                 *sql.Tx
+	createBlogStmt     *sql.Stmt
+	createUserStmt     *sql.Stmt
+	getUserStmt        *sql.Stmt
+	getUserByEmailStmt *sql.Stmt
+	listBlogsStmt      *sql.Stmt
+	listUsersStmt      *sql.Stmt
 }
 
 func (q *Queries) WithTx(tx *sql.Tx) *Queries {
 	return &Queries{
-		db:             tx,
-		tx:             tx,
-		createBlogStmt: q.createBlogStmt,
-		createUserStmt: q.createUserStmt,
-		getUserStmt:    q.getUserStmt,
-		listBlogsStmt:  q.listBlogsStmt,
-		listUsersStmt:  q.listUsersStmt,
+		db:                 tx,
+		tx:                 tx,
+		createBlogStmt:     q.createBlogStmt,
+		createUserStmt:     q.createUserStmt,
+		getUserStmt:        q.getUserStmt,
+		getUserByEmailStmt: q.getUserByEmailStmt,
+		listBlogsStmt:      q.listBlogsStmt,
+		listUsersStmt:      q.listUsersStmt,
 	}
 }
