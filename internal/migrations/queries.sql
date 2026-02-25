@@ -13,6 +13,12 @@ SELECT id, username, email, created_at, updated_at
 FROM users
 WHERE email = $1;
 
+
+-- name: GetUserByEmailIncludingPassword :one
+SELECT id, username, email, password, created_at, updated_at
+FROM users
+WHERE email = $1;
+
 -- name: ListUsers :many
 SELECT id, username, email, created_at, updated_at 
 FROM users

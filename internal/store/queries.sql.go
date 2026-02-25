@@ -123,6 +123,26 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (GetUserByEm
 	return i, err
 }
 
+const getUserByEmailIncludingPassword = `-- name: GetUserByEmailIncludingPassword :one
+SELECT id, username, email, password, created_at, updated_at
+FROM users
+WHERE email = $1
+`
+
+func (q *Queries) GetUserByEmailIncludingPassword(ctx context.Context, email string) (User, error) {
+	row := q.queryRow(ctx, q.getUserByEmailIncludingPasswordStmt, getUserByEmailIncludingPassword, email)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.Email,
+		&i.Password,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const listBlogs = `-- name: ListBlogs :many
 SELECT id, title, content, user_id, created_at, updated_at
 FROM blogs

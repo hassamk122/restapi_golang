@@ -3,12 +3,56 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
+	"os"
 
+	"github.com/hassamk122/restapi_golang/internal/auth"
 	"github.com/hassamk122/restapi_golang/internal/dtos"
 	"github.com/hassamk122/restapi_golang/internal/store"
 	"github.com/hassamk122/restapi_golang/internal/utils"
 	"github.com/hassamk122/restapi_golang/internal/validation"
 )
+
+func (h *Handler) LoginUserHandler() http.HandlerFunc {
+	return func(res http.ResponseWriter, req *http.Request) {
+		ctx := req.Context()
+
+		var userReq dtos.LoginRequest
+
+		decoder := json.NewDecoder(req.Body)
+		decoder.DisallowUnknownFields()
+		if err := decoder.Decode(&userReq); err != nil {
+			utils.RespondWithError(res, http.StatusBadGateway, "Invalid request payload")
+			return
+		}
+
+		if err := validation.Validate(&userReq); err != nil {
+			utils.RespondWithError(res, http.StatusBadRequest, err.Error())
+			return
+		}
+
+		user, err := h.Queries.GetUserByEmailIncludingPassword(ctx, userReq.Email)
+		if err != nil {
+			utils.RespondWithError(res, http.StatusUnauthorized, "Invalid credentials")
+			return
+		}
+
+		if !utils.ComparePassword(user.Password, userReq.Password) {
+			utils.RespondWithError(res, http.StatusUnauthorized, "Invalid credentials")
+			return
+		}
+
+		jwtKey := []byte(os.Getenv("JWT_SECRET_KEY"))
+		token, err := auth.GenerateJWT(int(user.ID), user.Email, jwtKey)
+		if err != nil {
+			utils.RespondWithError(res, http.StatusInternalServerError, "Error generating a token")
+			return
+		}
+
+		utils.RespondWithSuccess(res, http.StatusOK, "Login sucessful", map[string]string{
+			"token": token,
+		})
+	}
+}
 
 func (h *Handler) CreateUserHandler() http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
@@ -35,7 +79,7 @@ func (h *Handler) CreateUserHandler() http.HandlerFunc {
 		qtx := store.New(tx)
 
 		_, err = qtx.GetUserByEmail(ctx, userReq.Email)
-		if err != nil {
+		if err == nil {
 			utils.RespondWithError(res, http.StatusConflict, "Email already taken")
 			return
 		}
@@ -46,7 +90,7 @@ func (h *Handler) CreateUserHandler() http.HandlerFunc {
 			return
 		}
 
-		_, err = h.Queries.CreateUser(ctx, store.CreateUserParams{
+		_, err = qtx.CreateUser(ctx, store.CreateUserParams{
 			Username: userReq.Username,
 			Email:    userReq.Email,
 			Password: hashedPassword,
