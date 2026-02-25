@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/hassamk122/restapi_golang/internal/dtos"
+	"github.com/hassamk122/restapi_golang/internal/service"
 	"github.com/hassamk122/restapi_golang/internal/utils"
 	"github.com/hassamk122/restapi_golang/internal/validation"
 )
@@ -56,7 +57,7 @@ func (h *Handler) CreateUserHandler() http.HandlerFunc {
 		}
 
 		err := h.UserService.Register(ctx, userReq.Username, userReq.Email, userReq.Password)
-		if errors.Is(err, utils.ErrEmailTaken) {
+		if errors.Is(err, service.ErrEmailTaken) {
 			utils.RespondWithError(res, http.StatusConflict, "Email already taken")
 			return
 		}

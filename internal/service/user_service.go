@@ -35,7 +35,7 @@ func (s *UserService) Register(ctx context.Context, username, email, password st
 
 	_, err = repo.GetUserByEmail(ctx, email)
 	if err == nil {
-		return utils.ErrEmailTaken
+		return ErrEmailTaken
 	}
 
 	hashedPassword, err := utils.HashPassword(password)
@@ -55,10 +55,10 @@ func (s *UserService) Register(ctx context.Context, username, email, password st
 func (s *UserService) Login(ctx context.Context, email, password string) (string, error) {
 	user, err := s.UserRepo.GetUserByEmailIncludingPassword(ctx, email)
 	if err != nil {
-		return "", utils.ErrInvalidCredentials
+		return "", ErrInvalidCredentials
 	}
 	if !utils.ComparePassword(user.Password, password) {
-		return "", utils.ErrInvalidCredentials
+		return "", ErrInvalidCredentials
 	}
 	jwtKey := []byte(os.Getenv("JWT_SECRET_KEY"))
 	return auth.GenerateJWT(int(user.ID), user.Email, jwtKey)
