@@ -20,7 +20,7 @@ func SetupUserRoutes(mux *http.ServeMux, handler *handlers.Handler) {
 		handler.LoginUserHandler(),
 		middlewares.LoggingMiddleware))
 
-	userMux.Handle("GET /user/profile", middlewares.Apply(
+	userMux.Handle("GET /current-user/profile", middlewares.Apply(
 		handler.UserProfile(),
 		middlewares.LoggingMiddleware,
 		middlewares.AuthMiddleware))
