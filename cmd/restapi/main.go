@@ -13,6 +13,7 @@ import (
 	"github.com/hassamk122/restapi_golang/internal/routes"
 	"github.com/hassamk122/restapi_golang/internal/service"
 	"github.com/hassamk122/restapi_golang/internal/store"
+	"github.com/redis/go-redis/v9"
 )
 
 func main() {
@@ -25,11 +26,18 @@ func main() {
 	db := dbconfig.ConnectDB(config.DatabaseUrl)
 	defer db.Close()
 
+	rdb := dbconfig.ConnectRedis()
+	defer func(rdb *redis.Client) {
+		_ = rdb.Close()
+	}(rdb)
+
 	queries := store.New(db)
 
 	userRepo := repo.NewUserRepo(queries)
-	userService := service.NewUserService(db, userRepo)
-	handler := handlers.NewHandler(userRepo, userService)
+
+	userService := service.NewUserService(db, userRepo, rdb)
+
+	handler := handlers.NewHandler(userService)
 
 	mux := http.NewServeMux()
 	routes.SetupRoutes(mux, handler)
