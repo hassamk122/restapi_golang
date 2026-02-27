@@ -7,8 +7,10 @@ import (
 	"strings"
 
 	"github.com/dgrijalva/jwt-go"
+	"github.com/hassamk122/restapi_golang/config/dbconfig"
 	"github.com/hassamk122/restapi_golang/internal/auth"
 	"github.com/hassamk122/restapi_golang/internal/utils"
+	"github.com/redis/go-redis/v9"
 )
 
 // If used a plain string key, there is risk of key collison.
@@ -28,6 +30,15 @@ func AuthMiddleware(next http.Handler) http.Handler {
 
 		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
 		claims := &auth.Claims{}
+
+		blacklisted, err := dbconfig.RedisClient.Get(req.Context(), tokenString).Result()
+		if err == nil && blacklisted == "blacklisted" {
+			utils.RespondWithError(res, http.StatusUnauthorized, "Token revoked")
+			return
+		} else if err != nil && err != redis.Nil {
+			utils.RespondWithError(res, http.StatusInternalServerError, "Internal server error")
+			return
+		}
 
 		token, err := jwt.ParseWithClaims(tokenString, claims, func(t *jwt.Token) (interface{}, error) {
 			return []byte(os.Getenv("JWT_SECRET_KEY")), nil

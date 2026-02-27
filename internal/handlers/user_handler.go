@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"strings"
 
 	"github.com/hassamk122/restapi_golang/internal/auth"
 	"github.com/hassamk122/restapi_golang/internal/dtos"
@@ -90,4 +91,42 @@ func (h *Handler) CreateUserHandler() http.HandlerFunc {
 
 		utils.RespondWithSuccess(res, http.StatusCreated, "User created successfully", nil)
 	}
+}
+
+func (h *Handler) LogoutHandler() http.HandlerFunc {
+	return func(res http.ResponseWriter, req *http.Request) {
+		claims, ok := req.Context().Value(middlewares.UserClaimsKey).(*auth.Claims)
+		if !ok {
+			utils.RespondWithError(res, http.StatusBadRequest, "Please login to continue")
+			return
+		}
+
+		tokenString := extractTokenFromHeader(req)
+		if tokenString == "" {
+			utils.RespondWithError(res, http.StatusUnauthorized, "Missing token")
+			return
+		}
+
+		err := h.UserService.Logout(req.Context(), claims, tokenString)
+		if err != nil {
+			utils.RespondWithError(res, http.StatusInternalServerError, "Error Logging out")
+			return
+		}
+
+		utils.RespondWithSuccess(res, http.StatusCreated, "Logged out successfully", true)
+	}
+}
+
+func extractTokenFromHeader(req *http.Request) string {
+	authHeader := req.Header.Get("Authorization")
+	if authHeader == "" {
+		return ""
+	}
+
+	parts := strings.SplitN(authHeader, " ", 2)
+	if len(parts) != 2 || strings.ToLower(parts[0]) != "bearer" {
+		return ""
+	}
+
+	return parts[1]
 }

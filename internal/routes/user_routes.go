@@ -20,6 +20,10 @@ func SetupUserRoutes(mux *http.ServeMux, handler *handlers.Handler) {
 		handler.LoginUserHandler(),
 		middlewares.LoggingMiddleware))
 
+	userMux.Handle("POST /session/logout", middlewares.Apply(
+		handler.LogoutHandler(),
+		middlewares.AuthMiddleware))
+
 	userMux.Handle("GET /current-user/profile", middlewares.Apply(
 		handler.UserProfile(),
 		middlewares.LoggingMiddleware,

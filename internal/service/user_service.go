@@ -97,3 +97,45 @@ func (s *UserService) GetUserProfile(ctx context.Context, userId int32) (*store.
 
 	return &user, nil
 }
+
+func (s *UserService) Logout(ctx context.Context, claims *auth.Claims, tokenString string) error {
+	expirationTime := time.Unix(claims.ExpiresAt, 0)
+	now := time.Now()
+	ttl := expirationTime.Sub(now)
+	if ttl < 0 {
+		ttl = 5 * time.Minute
+	}
+
+	err := s.Redis.Set(ctx, tokenString, "blacklisted", ttl).Err()
+	if err != nil {
+		log.Printf("Error black listing token : %v", err)
+		return err
+	}
+
+	userIDStr := fmt.Sprintf("%d", claims.UserId)
+	if err := s.ClearUserSession(userIDStr); err != nil {
+		log.Printf("Error cleaning session for %s: %v\n", userIDStr, err)
+		return err
+	}
+
+	return nil
+}
+
+func (s *UserService) ClearUserSession(userID string) error {
+	pattern := fmt.Sprintf("session:%s:*", userID)
+	ctx := context.Background()
+
+	iter := s.Redis.Scan(ctx, 0, pattern, 0).Iterator()
+	for iter.Next(ctx) {
+		err := s.Redis.Del(ctx, iter.Val()).Err()
+		if err != nil {
+			fmt.Printf("failed to delete session")
+		}
+	}
+
+	if err := iter.Err(); err != nil {
+		return err
+	}
+
+	return nil
+}
