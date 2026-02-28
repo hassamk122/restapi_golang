@@ -14,18 +14,29 @@ func SetupUserRoutes(mux *http.ServeMux, handler *handlers.Handler) {
 
 	userMux.Handle("POST /register", middlewares.Apply(
 		handler.CreateUserHandler(),
-		middlewares.LoggingMiddleware))
+		middlewares.LoggingMiddleware,
+	))
 
 	userMux.Handle("POST /login", middlewares.Apply(
 		handler.LoginUserHandler(),
-		middlewares.LoggingMiddleware))
+		middlewares.LoggingMiddleware,
+	))
 
 	userMux.Handle("POST /session/logout", middlewares.Apply(
 		handler.LogoutHandler(),
-		middlewares.AuthMiddleware))
+		middlewares.AuthMiddleware,
+	))
 
 	userMux.Handle("GET /current-user/profile", middlewares.Apply(
 		handler.UserProfile(),
 		middlewares.LoggingMiddleware,
-		middlewares.AuthMiddleware))
+		middlewares.AuthMiddleware,
+	))
+
+	mux.Handle("POST /upload/profile-image", middlewares.Apply(
+		handler.UploadProfileImageHandler(),
+		middlewares.AuthMiddleware,
+		middlewares.LoggingMiddleware,
+	))
+
 }

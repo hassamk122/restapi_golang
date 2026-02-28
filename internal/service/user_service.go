@@ -6,9 +6,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"mime/multipart"
+	"net/http"
 	"os"
 	"time"
 
+	"github.com/cloudinary/cloudinary-go/v2"
+	"github.com/cloudinary/cloudinary-go/v2/api/uploader"
 	"github.com/hassamk122/restapi_golang/internal/auth"
 	"github.com/hassamk122/restapi_golang/internal/repo"
 	"github.com/hassamk122/restapi_golang/internal/store"
@@ -138,4 +142,50 @@ func (s *UserService) ClearUserSession(userID string) error {
 	}
 
 	return nil
+}
+
+func (s *UserService) ParseAndRetrieveProfile(req *http.Request) (multipart.File, *multipart.FileHeader, error) {
+	err := req.ParseMultipartForm(10 << 20)
+	if err != nil {
+		return nil, nil, fmt.Errorf("parse_multipart_err: %w", err)
+	}
+
+	file, fileHeader, err := req.FormFile("profile_img")
+	if err != nil {
+		return nil, nil, fmt.Errorf("retrieve_file_err: %w", err)
+	}
+
+	defer file.Close()
+
+	return file, fileHeader, nil
+}
+
+func (s *UserService) UploadAndSaveImage(userID int32, file multipart.File, fileHeader *multipart.FileHeader, ctx context.Context) (string, error) {
+	cld, err := cloudinary.NewFromParams(
+		os.Getenv("CLOUDINARY_CLOUD_NAME"),
+		os.Getenv("CLOUDINARY_API_KEY"),
+		os.Getenv("CLOUDINARY_API_SECRET"),
+	)
+	if err != nil {
+		log.Println("Error initiating cloud")
+		return "", fmt.Errorf("cloud_init_failed: %w", err)
+	}
+
+	uploadedResult, err := cld.Upload.Upload(ctx, file, uploader.UploadParams{
+		Folder:   "profile_images",
+		PublicID: fileHeader.Filename,
+	})
+	if err != nil {
+		log.Println("Error uploading to cloud")
+		return "", fmt.Errorf("upload_failed: %w", err)
+	}
+
+	s.UserRepo.CreateUserProfile(ctx,
+		store.CreateUserProfileParams{
+			UserID:       userID,
+			ProfileImage: sql.NullString{String: uploadedResult.SecureURL, Valid: uploadedResult.SecureURL != ""},
+		})
+	log.Println("profile pic inserted to db")
+
+	return uploadedResult.SecureURL, nil
 }

@@ -33,3 +33,21 @@ VALUES ($1, $2, $3)
 SELECT id, title, content, user_id, created_at, updated_at
 FROM blogs
 ORDER BY id;
+
+-- name: DeleteBlog :exec
+DELETE FROM blogs
+WHERE id = $1
+RETURNING id;
+
+-- name: GetTotalUserCound :one
+SELECT COUNT(*) AS total FROM users;
+
+-- name: CreateUserProfile :one
+INSERT INTO user_profiles (user_id, profile_image)
+VALUES ($1, $2)
+RETURNING id, user_id, profile_image;
+
+-- name: GetUserProfileByUserId :one
+SELECT id, user_id, profile_image, created_at, updated_at
+FROM user_profiles
+WHERE user_id = $1;

@@ -33,6 +33,41 @@ func (h *Handler) UserProfile() http.HandlerFunc {
 	}
 }
 
+func (h *Handler) UploadProfileImageHandler() http.HandlerFunc {
+	return func(res http.ResponseWriter, req *http.Request) {
+		claims, ok := req.Context().Value(middlewares.UserClaimsKey).(*auth.Claims)
+		if !ok {
+			utils.RespondWithError(res, http.StatusBadRequest, "please login to continue")
+			return
+		}
+
+		userID := claims.UserId
+
+		file, fileHeader, err := h.UserService.ParseAndRetrieveProfile(req)
+		if err != nil {
+			if strings.Contains(err.Error(), "parse_multipart_err") {
+				utils.RespondWithError(res, http.StatusBadRequest, "Error parsing file")
+			} else if strings.Contains(err.Error(), "retrieve_file_err") {
+				utils.RespondWithError(res, http.StatusBadRequest, "Error retrieving file")
+
+			}
+			return
+		}
+
+		uploadedResultURL, err := h.UserService.UploadAndSaveImage(int32(userID), file, fileHeader, req.Context())
+		if err != nil {
+			if strings.Contains(err.Error(), "cloud_init_failed") {
+				utils.RespondWithError(res, http.StatusInternalServerError, "Cloud initialization failed")
+			} else if strings.Contains(err.Error(), "upload_failed") {
+				utils.RespondWithError(res, http.StatusBadGateway, "Image upload failed")
+			}
+			return
+		}
+
+		utils.RespondWithSuccess(res, http.StatusOK, "User Profile uploaded successfully", uploadedResultURL)
+	}
+}
+
 func (h *Handler) LoginUserHandler() http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		ctx := req.Context()

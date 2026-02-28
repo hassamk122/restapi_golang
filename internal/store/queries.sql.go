@@ -69,6 +69,52 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (CreateU
 	return i, err
 }
 
+const createUserProfile = `-- name: CreateUserProfile :one
+INSERT INTO user_profiles (user_id, profile_image)
+VALUES ($1, $2)
+RETURNING id, user_id, profile_image
+`
+
+type CreateUserProfileParams struct {
+	UserID       int32          `json:"user_id"`
+	ProfileImage sql.NullString `json:"profile_image"`
+}
+
+type CreateUserProfileRow struct {
+	ID           int32          `json:"id"`
+	UserID       int32          `json:"user_id"`
+	ProfileImage sql.NullString `json:"profile_image"`
+}
+
+func (q *Queries) CreateUserProfile(ctx context.Context, arg CreateUserProfileParams) (CreateUserProfileRow, error) {
+	row := q.queryRow(ctx, q.createUserProfileStmt, createUserProfile, arg.UserID, arg.ProfileImage)
+	var i CreateUserProfileRow
+	err := row.Scan(&i.ID, &i.UserID, &i.ProfileImage)
+	return i, err
+}
+
+const deleteBlog = `-- name: DeleteBlog :exec
+DELETE FROM blogs
+WHERE id = $1
+RETURNING id
+`
+
+func (q *Queries) DeleteBlog(ctx context.Context, id int32) error {
+	_, err := q.exec(ctx, q.deleteBlogStmt, deleteBlog, id)
+	return err
+}
+
+const getTotalUserCound = `-- name: GetTotalUserCound :one
+SELECT COUNT(*) AS total FROM users
+`
+
+func (q *Queries) GetTotalUserCound(ctx context.Context) (int64, error) {
+	row := q.queryRow(ctx, q.getTotalUserCoundStmt, getTotalUserCound)
+	var total int64
+	err := row.Scan(&total)
+	return total, err
+}
+
 const getUser = `-- name: GetUser :one
 SELECT id, username, email, created_at, updated_at
 FROM users
@@ -137,6 +183,25 @@ func (q *Queries) GetUserByEmailIncludingPassword(ctx context.Context, email str
 		&i.Username,
 		&i.Email,
 		&i.Password,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getUserProfileByUserId = `-- name: GetUserProfileByUserId :one
+SELECT id, user_id, profile_image, created_at, updated_at
+FROM user_profiles
+WHERE user_id = $1
+`
+
+func (q *Queries) GetUserProfileByUserId(ctx context.Context, userID int32) (UserProfile, error) {
+	row := q.queryRow(ctx, q.getUserProfileByUserIdStmt, getUserProfileByUserId, userID)
+	var i UserProfile
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.ProfileImage,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)

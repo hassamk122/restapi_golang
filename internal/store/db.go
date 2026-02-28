@@ -30,6 +30,15 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	if q.createUserStmt, err = db.PrepareContext(ctx, createUser); err != nil {
 		return nil, fmt.Errorf("error preparing query CreateUser: %w", err)
 	}
+	if q.createUserProfileStmt, err = db.PrepareContext(ctx, createUserProfile); err != nil {
+		return nil, fmt.Errorf("error preparing query CreateUserProfile: %w", err)
+	}
+	if q.deleteBlogStmt, err = db.PrepareContext(ctx, deleteBlog); err != nil {
+		return nil, fmt.Errorf("error preparing query DeleteBlog: %w", err)
+	}
+	if q.getTotalUserCoundStmt, err = db.PrepareContext(ctx, getTotalUserCound); err != nil {
+		return nil, fmt.Errorf("error preparing query GetTotalUserCound: %w", err)
+	}
 	if q.getUserStmt, err = db.PrepareContext(ctx, getUser); err != nil {
 		return nil, fmt.Errorf("error preparing query GetUser: %w", err)
 	}
@@ -38,6 +47,9 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	}
 	if q.getUserByEmailIncludingPasswordStmt, err = db.PrepareContext(ctx, getUserByEmailIncludingPassword); err != nil {
 		return nil, fmt.Errorf("error preparing query GetUserByEmailIncludingPassword: %w", err)
+	}
+	if q.getUserProfileByUserIdStmt, err = db.PrepareContext(ctx, getUserProfileByUserId); err != nil {
+		return nil, fmt.Errorf("error preparing query GetUserProfileByUserId: %w", err)
 	}
 	if q.listBlogsStmt, err = db.PrepareContext(ctx, listBlogs); err != nil {
 		return nil, fmt.Errorf("error preparing query ListBlogs: %w", err)
@@ -60,6 +72,21 @@ func (q *Queries) Close() error {
 			err = fmt.Errorf("error closing createUserStmt: %w", cerr)
 		}
 	}
+	if q.createUserProfileStmt != nil {
+		if cerr := q.createUserProfileStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing createUserProfileStmt: %w", cerr)
+		}
+	}
+	if q.deleteBlogStmt != nil {
+		if cerr := q.deleteBlogStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing deleteBlogStmt: %w", cerr)
+		}
+	}
+	if q.getTotalUserCoundStmt != nil {
+		if cerr := q.getTotalUserCoundStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing getTotalUserCoundStmt: %w", cerr)
+		}
+	}
 	if q.getUserStmt != nil {
 		if cerr := q.getUserStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing getUserStmt: %w", cerr)
@@ -73,6 +100,11 @@ func (q *Queries) Close() error {
 	if q.getUserByEmailIncludingPasswordStmt != nil {
 		if cerr := q.getUserByEmailIncludingPasswordStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing getUserByEmailIncludingPasswordStmt: %w", cerr)
+		}
+	}
+	if q.getUserProfileByUserIdStmt != nil {
+		if cerr := q.getUserProfileByUserIdStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing getUserProfileByUserIdStmt: %w", cerr)
 		}
 	}
 	if q.listBlogsStmt != nil {
@@ -126,9 +158,13 @@ type Queries struct {
 	tx                                  *sql.Tx
 	createBlogStmt                      *sql.Stmt
 	createUserStmt                      *sql.Stmt
+	createUserProfileStmt               *sql.Stmt
+	deleteBlogStmt                      *sql.Stmt
+	getTotalUserCoundStmt               *sql.Stmt
 	getUserStmt                         *sql.Stmt
 	getUserByEmailStmt                  *sql.Stmt
 	getUserByEmailIncludingPasswordStmt *sql.Stmt
+	getUserProfileByUserIdStmt          *sql.Stmt
 	listBlogsStmt                       *sql.Stmt
 	listUsersStmt                       *sql.Stmt
 }
@@ -139,9 +175,13 @@ func (q *Queries) WithTx(tx *sql.Tx) *Queries {
 		tx:                                  tx,
 		createBlogStmt:                      q.createBlogStmt,
 		createUserStmt:                      q.createUserStmt,
+		createUserProfileStmt:               q.createUserProfileStmt,
+		deleteBlogStmt:                      q.deleteBlogStmt,
+		getTotalUserCoundStmt:               q.getTotalUserCoundStmt,
 		getUserStmt:                         q.getUserStmt,
 		getUserByEmailStmt:                  q.getUserByEmailStmt,
 		getUserByEmailIncludingPasswordStmt: q.getUserByEmailIncludingPasswordStmt,
+		getUserProfileByUserIdStmt:          q.getUserProfileByUserIdStmt,
 		listBlogsStmt:                       q.listBlogsStmt,
 		listUsersStmt:                       q.listUsersStmt,
 	}
