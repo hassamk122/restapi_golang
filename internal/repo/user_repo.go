@@ -12,6 +12,7 @@ type UserRepo interface {
 	GetUserByEmail(ctx context.Context, email string) (store.GetUserByEmailRow, error)
 	GetUserByID(ctx context.Context, userId int32) (store.GetUserRow, error)
 	CreateUserProfile(ctx context.Context, arg store.CreateUserProfileParams) (store.CreateUserProfileRow, error)
+	ListUsers(ctx context.Context, arg store.ListUsersParams) ([]store.ListUsersRow, error)
 }
 
 type userRepo struct {
@@ -42,4 +43,8 @@ func (r *userRepo) GetUserByID(ctx context.Context, userId int32) (store.GetUser
 
 func (r *userRepo) CreateUserProfile(ctx context.Context, arg store.CreateUserProfileParams) (store.CreateUserProfileRow, error) {
 	return r.queries.CreateUserProfile(ctx, arg)
+}
+
+func (r *userRepo) ListUsers(ctx context.Context, arg store.ListUsersParams) ([]store.ListUsersRow, error) {
+	return r.queries.ListUsers(ctx, arg)
 }

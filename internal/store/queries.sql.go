@@ -248,7 +248,13 @@ const listUsers = `-- name: ListUsers :many
 SELECT id, username, email, created_at, updated_at 
 FROM users
 ORDER BY id
+LIMIT $1 OFFSET $2
 `
+
+type ListUsersParams struct {
+	Limit  int32 `json:"limit"`
+	Offset int32 `json:"offset"`
+}
 
 type ListUsersRow struct {
 	ID        int32        `json:"id"`
@@ -258,8 +264,8 @@ type ListUsersRow struct {
 	UpdatedAt sql.NullTime `json:"updated_at"`
 }
 
-func (q *Queries) ListUsers(ctx context.Context) ([]ListUsersRow, error) {
-	rows, err := q.query(ctx, q.listUsersStmt, listUsers)
+func (q *Queries) ListUsers(ctx context.Context, arg ListUsersParams) ([]ListUsersRow, error) {
+	rows, err := q.query(ctx, q.listUsersStmt, listUsers, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}

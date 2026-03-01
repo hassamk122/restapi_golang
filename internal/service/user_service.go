@@ -189,3 +189,14 @@ func (s *UserService) UploadAndSaveImage(userID int32, file multipart.File, file
 
 	return uploadedResult.SecureURL, nil
 }
+
+func (s *UserService) ListAllUserPaginated(ctx context.Context, limit int, offset int) ([]store.ListUsersRow, error) {
+	users, err := s.UserRepo.ListUsers(ctx, store.ListUsersParams{
+		Limit:  int32(limit),
+		Offset: int32(offset),
+	})
+	if err != nil {
+		return nil, err
+	}
+	return users, nil
+}

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/hassamk122/restapi_golang/internal/auth"
@@ -14,7 +15,7 @@ import (
 	"github.com/hassamk122/restapi_golang/internal/validation"
 )
 
-func (h *Handler) UserProfile() http.HandlerFunc {
+func (h *Handler) UserProfileHandler() http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		claims, ok := req.Context().Value(middlewares.UserClaimsKey).(*auth.Claims)
 		if !ok {
@@ -95,6 +96,24 @@ func (h *Handler) LoginUserHandler() http.HandlerFunc {
 		utils.RespondWithSuccess(res, http.StatusOK, "Login sucessful", map[string]string{
 			"token": token,
 		})
+	}
+}
+
+func (h *Handler) ListUserHandler() http.HandlerFunc {
+	return func(res http.ResponseWriter, req *http.Request) {
+		ctx := req.Context()
+
+		limit, _ := strconv.Atoi(req.URL.Query().Get("limit"))
+		offset, _ := strconv.Atoi(req.URL.Query().Get("offset"))
+
+		users, err := h.UserService.ListAllUserPaginated(ctx, limit, offset)
+		if err != nil {
+			utils.RespondWithError(res, http.StatusInternalServerError, "Error querying database")
+			return
+		}
+
+		utils.RespondWithSuccess(res, http.StatusOK, "success", users)
+
 	}
 }
 

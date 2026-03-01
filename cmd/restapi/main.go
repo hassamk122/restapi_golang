@@ -9,6 +9,7 @@ import (
 	"github.com/hassamk122/restapi_golang/config"
 	"github.com/hassamk122/restapi_golang/config/dbconfig"
 	"github.com/hassamk122/restapi_golang/internal/handlers"
+	"github.com/hassamk122/restapi_golang/internal/middlewares"
 	"github.com/hassamk122/restapi_golang/internal/repo"
 	"github.com/hassamk122/restapi_golang/internal/routes"
 	"github.com/hassamk122/restapi_golang/internal/service"
@@ -42,11 +43,13 @@ func main() {
 	mux := http.NewServeMux()
 	routes.SetupRoutes(mux, handler)
 
+	loggedMux := middlewares.LoggingMiddleware(mux)
+
 	serverAddr := fmt.Sprintf(":%s", config.ServerPort)
 
 	server := &http.Server{
 		Addr:    serverAddr,
-		Handler: mux,
+		Handler: loggedMux,
 	}
 
 	log.Printf("Server Started at Port %s\n", serverAddr)
